@@ -1,0 +1,163 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+  <title>Color Sort — Voidwave</title>
+  <meta name="description" content="A glowing, endlessly addictive color sorting puzzle. Pour the blocks until every tube holds a single color.">
+  <meta name="theme-color" content="#0b1220">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Color Sort">
+  <meta property="og:title" content="Color Sort">
+  <meta property="og:description" content="Pour the glowing blocks until every tube holds a single color. Endless levels, daily challenge, mystery tubes.">
+  <meta property="og:image" content="icons/icon-512.png">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" href="icons/icon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <div class="bg" aria-hidden="true"><span></span><span></span><span></span></div>
+
+  <div id="app">
+    <header class="topbar">
+      <button class="icon-btn" id="btn-menu" aria-label="Menu">
+        <svg viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
+      </button>
+      <div class="title-block">
+        <div class="mode-label" id="mode-label">LEVEL</div>
+        <div class="level-num" id="level-num">1</div>
+      </div>
+      <div class="coins" id="coins" title="Coins">
+        <span class="coin-icon" aria-hidden="true"></span><span id="coin-count">0</span>
+      </div>
+    </header>
+
+    <div class="subbar">
+      <div class="stars-track" id="par-info"></div>
+      <div class="tag" id="level-tag" hidden></div>
+    </div>
+
+    <main id="board-wrap">
+      <div id="board" role="application" aria-label="Color sort board"></div>
+    </main>
+
+    <footer class="controls">
+      <button class="ctl primary" id="btn-restart" aria-label="Restart level">
+        <svg viewBox="0 0 24 24"><path d="M4 12a8 8 0 1 0 2.4-5.7"/><path d="M4 4v5h5"/></svg>
+        <span>Restart</span>
+      </button>
+      <div class="moves"><span class="moves-label">Moves</span><span id="moves">0</span></div>
+      <button class="ctl round" id="btn-hint" aria-label="Hint">
+        <svg viewBox="0 0 24 24"><path d="M9 18h6M10 21h4M12 3a6 6 0 0 0-3.5 10.9c.6.5 1 1.2 1 2.1h5c0-.9.4-1.6 1-2.1A6 6 0 0 0 12 3z"/></svg>
+        <span class="badge" id="hint-cost">15</span>
+      </button>
+      <button class="ctl round" id="btn-tube" aria-label="Add extra tube">
+        <svg viewBox="0 0 24 24"><rect x="8" y="3" width="8" height="18" rx="4"/><path d="M19 6v6M16 9h6" /></svg>
+        <span class="badge" id="tube-cost">40</span>
+      </button>
+      <button class="ctl primary" id="btn-undo" aria-label="Undo">
+        <svg viewBox="0 0 24 24"><path d="M9 14 4 9l5-5"/><path d="M4 9h10a6 6 0 0 1 0 12h-3"/></svg>
+        <span>Undo</span>
+      </button>
+    </footer>
+  </div>
+
+  <!-- Win dialog -->
+  <div class="overlay" id="win" hidden>
+    <div class="card win-card">
+      <div class="win-title" id="win-title">Sorted!</div>
+      <div class="big-stars" id="win-stars">
+        <span class="bs"></span><span class="bs"></span><span class="bs"></span>
+      </div>
+      <div class="win-stats">
+        <div><span class="k">Moves</span><span class="v" id="win-moves">0</span></div>
+        <div><span class="k">Par</span><span class="v" id="win-par">0</span></div>
+        <div><span class="k">Coins</span><span class="v gold" id="win-coins">+0</span></div>
+      </div>
+      <div class="win-note" id="win-note"></div>
+      <button class="cta" id="btn-next">Next Level</button>
+      <button class="link-btn" id="btn-replay">Replay</button>
+    </div>
+  </div>
+
+  <!-- Stuck dialog -->
+  <div class="overlay" id="stuck" hidden>
+    <div class="card">
+      <div class="win-title small">No moves left</div>
+      <p class="muted">You're boxed in. Undo a few steps, add a tube, or start fresh.</p>
+      <div class="row">
+        <button class="cta secondary" id="stuck-undo">Undo</button>
+        <button class="cta secondary" id="stuck-tube">+ Tube</button>
+        <button class="cta" id="stuck-restart">Restart</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Menu -->
+  <div class="overlay" id="menu" hidden>
+    <div class="card menu-card">
+      <div class="menu-head">
+        <div class="win-title small">Color Sort</div>
+        <button class="icon-btn" id="menu-close" aria-label="Close">
+          <svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18"/></svg>
+        </button>
+      </div>
+
+      <div class="stat-grid">
+        <div class="stat"><span class="v" id="st-level">1</span><span class="k">Level</span></div>
+        <div class="stat"><span class="v" id="st-stars">0</span><span class="k">Stars</span></div>
+        <div class="stat"><span class="v" id="st-streak">0</span><span class="k">Daily streak</span></div>
+      </div>
+
+      <button class="menu-item daily" id="btn-daily">
+        <span class="mi-icon">📅</span>
+        <span class="mi-text"><b>Daily Challenge</b><small id="daily-sub">A fresh hard puzzle every day</small></span>
+        <span class="mi-go">›</span>
+      </button>
+      <button class="menu-item" id="btn-campaign">
+        <span class="mi-icon">🧪</span>
+        <span class="mi-text"><b>Campaign</b><small id="campaign-sub">Continue at level 1</small></span>
+        <span class="mi-go">›</span>
+      </button>
+      <button class="menu-item" id="btn-howto">
+        <span class="mi-icon">❔</span>
+        <span class="mi-text"><b>How to play</b><small>Rules &amp; tips</small></span>
+        <span class="mi-go">›</span>
+      </button>
+
+      <div class="toggles">
+        <label class="toggle"><span>Sound</span><input type="checkbox" id="opt-sound"><i></i></label>
+        <label class="toggle"><span>Vibration</span><input type="checkbox" id="opt-haptics"><i></i></label>
+        <label class="toggle"><span>Color-blind symbols</span><input type="checkbox" id="opt-symbols"><i></i></label>
+      </div>
+      <button class="link-btn danger" id="btn-reset">Reset progress</button>
+    </div>
+  </div>
+
+  <!-- How to -->
+  <div class="overlay" id="howto" hidden>
+    <div class="card howto-card">
+      <div class="win-title small">How to play</div>
+      <ol class="howto">
+        <li><b>Tap a tube</b> to pick up its top color, then <b>tap another tube</b> to pour.</li>
+        <li>You can only pour onto the <b>same color</b> or into an <b>empty tube</b>, and only while there's room.</li>
+        <li>Fill every tube with a <b>single color</b> to win.</li>
+        <li>Beat <b>par</b> (the solver's move count) for ★★★ and bonus coins.</li>
+        <li><b>Mystery levels</b> hide blocks under <b>?</b> until they reach the top.</li>
+        <li>Stuck? Undo is free. Hints and extra tubes cost coins.</li>
+      </ol>
+      <p class="muted small">Keys: <kbd>1</kbd>–<kbd>9</kbd>, <kbd>0</kbd> select tubes · <kbd>Z</kbd> undo · <kbd>R</kbd> restart · <kbd>H</kbd> hint</p>
+      <button class="cta" id="howto-close">Let's go</button>
+    </div>
+  </div>
+
+  <div id="toast" role="status" aria-live="polite"></div>
+  <canvas id="fx" aria-hidden="true"></canvas>
+
+  <script src="js/solver.js"></script>
+  <script src="js/game.js"></script>
+</body>
+</html>
