@@ -223,8 +223,8 @@
       elapsed: 0, lastAt: Date.now(),
     };
     persistGame();
+    updateHud(); // before render, so the HUD is fresh even if drawing fails
     render(true);
-    updateHud();
     if (mode === 'campaign' && id === 1 && !save.stars[1]) {
       if (save.seenHowto) setTimeout(() => toast('Tap a tube to pick up its top color, then tap where to pour it', 4200), 700);
     } else if (G.mystery) {
@@ -332,7 +332,7 @@
     return el;
   }
   function setBlockColor(el, color, hidden) {
-    const p = PALETTE[color];
+    const p = PALETTE[color % PALETTE.length];
     if (hidden) { el.style.setProperty('--c', '#222'); el.style.setProperty('--rgb', '0,0,0'); }
     else { el.style.setProperty('--c', p.c); el.style.setProperty('--rgb', p.rgb); el.style.setProperty('--ink', p.ink); }
     const sym = el.querySelector('.sym');
@@ -419,11 +419,11 @@
     const done = tubeDone(i);
     const wasDone = el.classList.contains('done');
     el.classList.toggle('done', done);
-    if (done) el.style.setProperty('--rgb', PALETTE[G.tubes[i][0]].rgb);
+    if (done) el.style.setProperty('--rgb', PALETTE[G.tubes[i][0] % PALETTE.length].rgb);
     if (done && celebrate && !wasDone) {
       el.classList.remove('pop'); void el.offsetWidth; el.classList.add('pop');
       const r = el.getBoundingClientRect();
-      const color = PALETTE[G.tubes[i][0]].c;
+      const color = PALETTE[G.tubes[i][0] % PALETTE.length].c;
       FX.burst(r.left + r.width / 2, r.top + 6, color, 44);
       G.completedCount++;
       const words = ['Nice!', 'Great!', 'Sweet!', 'Awesome!', 'Brilliant!', 'Amazing!', 'Unstoppable!', 'Legendary!'];

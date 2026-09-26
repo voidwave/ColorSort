@@ -32,6 +32,8 @@ python3 -m http.server   # then open http://localhost:8000
 - `apps-script/Code.gs`: the leaderboard backend (a Google Apps Script web app).
 - `sw.js`: a network-first service worker for offline play.
 
+When you change CSS or JS, bump the `?v=` tags in `index.html` so browsers never mix old and new files.
+
 ## Deploying
 
 GitHub Pages serves the repository root of `main` (Settings → Pages → Deploy from a branch → `main` / root). All asset paths are relative, so the site works under `/ColorSort/`.
