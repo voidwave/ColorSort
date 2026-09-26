@@ -211,7 +211,7 @@
   }
 
   // ---------- Level design ----------
-  const PALETTE_SIZE = 14;
+  const PALETTE_SIZE = 12;
 
   // Difficulty curve for the endless campaign.
   function levelConfig(level) {

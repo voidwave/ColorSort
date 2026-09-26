@@ -3,27 +3,27 @@
   'use strict';
 
   const Core = window.ColorSortCore;
+  const LB = window.ColorSortLeaderboard;
   const $ = (s) => document.querySelector(s);
 
   // ---------- Palette ----------
+  // Twelve hues picked to stay apart from each other; each carries a letter for color-blind play.
   const PALETTE = [
-    { c: '#ff2a2a', sym: '●' },  // red
-    { c: '#ff9a1a', sym: '▲' },  // orange
-    { c: '#ffec1a', sym: '■' },  // yellow
-    { c: '#22ff3a', sym: '◆' },  // green
-    { c: '#19f0ff', sym: '★' },  // cyan
-    { c: '#1e2cff', sym: '♥' },  // blue
-    { c: '#8a90ff', sym: '✚' },  // periwinkle
-    { c: '#8b1d9c', sym: '☾' },  // purple
-    { c: '#ff1fe8', sym: '♣' },  // magenta
-    { c: '#e6e6ea', sym: '♠' },  // white
-    { c: '#ff8fb8', sym: '✦' },  // pink
-    { c: '#a0602c', sym: '⬢' },  // brown
-    { c: '#0e9e8c', sym: '✖' },  // teal
-    { c: '#9aa815', sym: '◐' },  // olive
+    { c: '#ff2b2b', sym: 'R', ink: '#fff' },     // red
+    { c: '#ff8a00', sym: 'O', ink: '#2a1500' },  // orange
+    { c: '#ffe600', sym: 'Y', ink: '#2a2400' },  // yellow
+    { c: '#1fd14a', sym: 'G', ink: '#002a0c' },  // green
+    { c: '#00e1ff', sym: 'C', ink: '#00262b' },  // cyan
+    { c: '#2446ff', sym: 'B', ink: '#fff' },     // blue
+    { c: '#9340ff', sym: 'V', ink: '#fff' },     // violet
+    { c: '#ff2ec4', sym: 'M', ink: '#fff' },     // magenta
+    { c: '#f4f4f4', sym: 'W', ink: '#222' },     // white
+    { c: '#ffb0cf', sym: 'P', ink: '#3a0a1e' },  // pink
+    { c: '#8b4a1c', sym: 'Br', ink: '#fff' },    // brown
+    { c: '#2b2f3a', sym: 'Bk', ink: '#fff' },    // black
   ].map((p) => {
     const n = parseInt(p.c.slice(1), 16);
-    return { c: p.c, sym: p.sym + '︎', rgb: `${n >> 16}, ${(n >> 8) & 255}, ${n & 255}` };
+    return { c: p.c, sym: p.sym, ink: p.ink, rgb: `${n >> 16}, ${(n >> 8) & 255}, ${n & 255}` };
   });
 
   const HINT_COST = 15;
@@ -44,10 +44,11 @@
     coins: START_COINS,
     stars: {},
     daily: { last: null, streak: 0, best: 0, done: {} },
-    opts: { sound: true, haptics: true, symbols: false },
+    opts: { sound: true, haptics: true, symbols: true },
     seenHowto: false,
   }, loadJSON(SAVE_KEY, {}));
-  save.opts = Object.assign({ sound: true, haptics: true, symbols: false }, save.opts);
+  save.opts = Object.assign({ sound: true, haptics: true, symbols: true }, save.opts);
+  if (!save.opts.lettersDefault) { save.opts.symbols = true; save.opts.lettersDefault = true; } // letters now default on
   save.daily = Object.assign({ last: null, streak: 0, best: 0, done: {} }, save.daily);
   const persist = () => saveJSON(SAVE_KEY, save);
 
@@ -219,6 +220,7 @@
       mode, id, cap: lv.capacity, par: lv.par, mystery: cfg.mystery,
       tubes, hidden, start: { tubes: tubes.map((t) => t.slice()), hidden: hidden.map((h) => h.slice()) },
       history: [], moves: 0, selected: -1, extra: 0, hints: 0, completedCount: 0, won: false,
+      elapsed: 0, lastAt: Date.now(),
     };
     persistGame();
     render(true);
@@ -238,6 +240,7 @@
       mode: G.mode, id: G.id, cap: G.cap, par: G.par, mystery: G.mystery,
       tubes: G.tubes, hidden: G.hidden, start: G.start, history: G.history.slice(-300),
       moves: G.moves, extra: G.extra, hints: G.hints, completedCount: G.completedCount, won: G.won,
+      elapsed: G.elapsed,
     });
   }
 
@@ -246,7 +249,8 @@
     if (!g || !g.tubes || g.won) return false;
     if (g.mode === 'daily' && g.id !== todayStr()) return false;
     if (g.mode === 'campaign' && g.id !== save.level) return false;
-    G = Object.assign({ selected: -1 }, g);
+    if (g.tubes.some((t) => t.some((c) => !PALETTE[c]))) return false; // saved with an older palette
+    G = Object.assign({ selected: -1, elapsed: 0 }, g, { lastAt: Date.now() });
     render(true);
     updateHud();
     return true;
@@ -330,7 +334,7 @@
   function setBlockColor(el, color, hidden) {
     const p = PALETTE[color];
     if (hidden) { el.style.setProperty('--c', '#222'); el.style.setProperty('--rgb', '0,0,0'); }
-    else { el.style.setProperty('--c', p.c); el.style.setProperty('--rgb', p.rgb); }
+    else { el.style.setProperty('--c', p.c); el.style.setProperty('--rgb', p.rgb); el.style.setProperty('--ink', p.ink); }
     const sym = el.querySelector('.sym');
     if (sym) sym.textContent = hidden ? '' : p.sym;
   }
@@ -494,6 +498,7 @@
       if (t.length && t[t.length - 1]) { t[t.length - 1] = false; reveals.push(t.length - 1); }
       G.history.push({ a, b, n, reveals });
       G.moves++;
+      tick();
     }
 
     const dst = tubeEls[b];
@@ -574,6 +579,15 @@
     }
     buzz(8);
   }
+
+  // Active play time: gaps longer than a minute (idle, tab in background) don't count.
+  function tick() {
+    const now = Date.now();
+    const dt = now - (G.lastAt || now);
+    if (dt > 0 && dt < 60000) G.elapsed = (G.elapsed || 0) + dt;
+    G.lastAt = now;
+  }
+  const boardId = () => (G.mode === 'daily' ? 'D' : 'L') + G.id;
 
   function restart() {
     if (!G) return;
@@ -676,6 +690,39 @@
     FX.confetti();
     bs.forEach((s, i) => { if (i < stars) setTimeout(() => { s.classList.add('on'); Sound.coin(); }, 350 + i * 260); });
     animateCoins(save.coins - coins, save.coins);
+    postScore();
+  }
+
+  function postScore() {
+    const box = $('#win-rank');
+    if (!LB.enabled) { box.hidden = true; return; }
+    const board = boardId();
+    box.hidden = false;
+    box.innerHTML = `Posting your score as <b>${escapeHtml(LB.player.name)}</b>…`;
+    box.onclick = () => LB.open(board, 'D' + todayStr());
+    LB.submit({
+      board,
+      moves: G.moves,
+      par: G.par,
+      seconds: Math.round((G.elapsed || 0) / 1000),
+      hints: G.hints || 0,
+      extra: G.extra ? 1 : 0,
+    }).then((d) => {
+      if ($('#win').hidden) return;
+      box.innerHTML = LB.winSummary(d) + ' <span class="lb-more">Leaderboard ›</span>';
+    }, (e) => {
+      box.innerHTML = `Couldn't post your score (${escapeHtml(e.message || 'offline')}). <span class="lb-more">Leaderboard ›</span>`;
+    });
+  }
+
+  function escapeHtml(s) {
+    return String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  }
+
+  function openLeaderboard() {
+    if (!G) return;
+    const daily = 'D' + todayStr();
+    LB.open(G.mode === 'daily' ? daily : boardId(), daily);
   }
 
   function animateCoins(from, to) {
@@ -768,6 +815,8 @@
     newGame('campaign', save.level);
   });
   $('#btn-howto').addEventListener('click', () => { hide('#menu'); show('#howto'); });
+  $('#btn-lb').addEventListener('click', openLeaderboard);
+  $('#btn-menu-lb').addEventListener('click', () => { hide('#menu'); openLeaderboard(); });
   $('#howto-close').addEventListener('click', () => {
     hide('#howto');
     if (!save.seenHowto && G && G.mode === 'campaign' && G.id === 1 && !G.moves) {
@@ -793,7 +842,7 @@
 
   addEventListener('keydown', (e) => {
     if (e.metaKey || e.ctrlKey || e.altKey) return;
-    if (e.key === 'Escape') { ['#menu', '#howto', '#stuck'].forEach(hide); return; }
+    if (e.key === 'Escape') { ['#menu', '#howto', '#stuck', '#lb'].forEach(hide); return; }
     if (anyOverlay()) {
       if (e.key === 'Enter' && !$('#win').hidden) $('#btn-next').click();
       return;
