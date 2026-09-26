@@ -1,5 +1,5 @@
 // Network-first service worker: always fresh when online, still playable offline.
-const CACHE = 'colorsort-v2';
+const CACHE = 'colorsort-v3';
 const ASSETS = [
   './', 'index.html', 'css/style.css', 'js/config.js', 'js/solver.js', 'js/leaderboard.js', 'js/game.js',
   'manifest.webmanifest', 'icons/icon.svg', 'icons/icon-192.png', 'icons/icon-512.png', 'icons/apple-touch-icon.png',
@@ -20,7 +20,8 @@ self.addEventListener('activate', (e) => {
 self.addEventListener('fetch', (e) => {
   if (e.request.method !== 'GET' || new URL(e.request.url).origin !== location.origin) return; // leaderboard calls go straight to the network
   e.respondWith(
-    fetch(e.request)
+    // no-cache: always revalidate with the server so a deploy never mixes old and new files.
+    fetch(e.request, { cache: 'no-cache' })
       .then((res) => {
         const copy = res.clone();
         caches.open(CACHE).then((c) => c.put(e.request, copy));
