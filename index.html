@@ -23,9 +23,14 @@
 
   <div id="app">
     <header class="topbar">
-      <button class="icon-btn" id="btn-menu" aria-label="Menu">
-        <svg viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
-      </button>
+      <div class="tb-left">
+        <button class="icon-btn" id="btn-menu" aria-label="Menu">
+          <svg viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
+        </button>
+        <button class="icon-btn trophy" id="btn-lb" aria-label="Leaderboard">
+          <svg viewBox="0 0 24 24"><path d="M8 21h8M12 17v4M7 4h10v5a5 5 0 0 1-10 0V4z"/><path d="M17 5h3v2a3 3 0 0 1-3 3M7 5H4v2a3 3 0 0 0 3 3"/></svg>
+        </button>
+      </div>
       <div class="title-block">
         <div class="mode-label" id="mode-label">LEVEL</div>
         <div class="level-num" id="level-num">1</div>
@@ -78,6 +83,7 @@
         <div><span class="k">Coins</span><span class="v gold" id="win-coins">+0</span></div>
       </div>
       <div class="win-note" id="win-note"></div>
+      <div class="win-rank" id="win-rank" hidden></div>
       <button class="cta" id="btn-next">Next Level</button>
       <button class="link-btn" id="btn-replay">Replay</button>
     </div>
@@ -122,6 +128,11 @@
         <span class="mi-text"><b>Campaign</b><small id="campaign-sub">Continue at level 1</small></span>
         <span class="mi-go">›</span>
       </button>
+      <button class="menu-item" id="btn-menu-lb">
+        <span class="mi-icon">🏆</span>
+        <span class="mi-text"><b>Leaderboards</b><small>Fewest moves, best scores, top players</small></span>
+        <span class="mi-go">›</span>
+      </button>
       <button class="menu-item" id="btn-howto">
         <span class="mi-icon">❔</span>
         <span class="mi-text"><b>How to play</b><small>Rules &amp; tips</small></span>
@@ -131,7 +142,7 @@
       <div class="toggles">
         <label class="toggle"><span>Sound</span><input type="checkbox" id="opt-sound"><i></i></label>
         <label class="toggle"><span>Vibration</span><input type="checkbox" id="opt-haptics"><i></i></label>
-        <label class="toggle"><span>Color-blind symbols</span><input type="checkbox" id="opt-symbols"><i></i></label>
+        <label class="toggle"><span>Color letters</span><input type="checkbox" id="opt-symbols"><i></i></label>
       </div>
       <button class="link-btn danger" id="btn-reset">Reset progress</button>
     </div>
@@ -154,10 +165,34 @@
     </div>
   </div>
 
+  <!-- Leaderboard -->
+  <div class="overlay" id="lb" hidden>
+    <div class="card lb-card">
+      <div class="menu-head">
+        <div class="win-title small">Leaderboard</div>
+        <button class="icon-btn" id="lb-close" aria-label="Close">
+          <svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18"/></svg>
+        </button>
+      </div>
+      <div class="lb-tabs" role="tablist">
+        <button class="lb-tab" data-tab="level" role="tab">Level</button>
+        <button class="lb-tab" data-tab="daily" role="tab">Daily</button>
+        <button class="lb-tab" data-tab="top" role="tab">Top players</button>
+      </div>
+      <label class="lb-namerow">
+        <span>Your name</span>
+        <input id="lb-name" maxlength="16" autocomplete="nickname" spellcheck="false">
+      </label>
+      <div id="lb-body"></div>
+    </div>
+  </div>
+
   <div id="toast" role="status" aria-live="polite"></div>
   <canvas id="fx" aria-hidden="true"></canvas>
 
+  <script src="js/config.js"></script>
   <script src="js/solver.js"></script>
+  <script src="js/leaderboard.js"></script>
   <script src="js/game.js"></script>
 </body>
 </html>
